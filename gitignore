@@ -1,0 +1,19 @@
+# Dataset (downloaded automatically by torchvision on first run, ~170 MB)
+data/
+
+# Trained model checkpoints
+checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
