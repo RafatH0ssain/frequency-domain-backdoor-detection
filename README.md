@@ -1,7 +1,6 @@
 # Frequency-Domain Backdoor Detection for Lightweight Visual AI
 
-CSCI 4192 Directed Studies — Deliverable 2 (Technical Exercises & Lab Submissions)
-Rafat Hossain (B00961714), supervised by Dr. Srini Sampalli, Dalhousie University.
+Supervised by Dr. Srini Sampalli, Dalhousie University.
 
 ## What this is
 
@@ -15,7 +14,7 @@ patch, it slips past spatial defenses like Grad-CAM and STRIP.
 The idea explored here is to catch the trigger by looking at **global frequency
 and edge statistics of the input image** instead of spatial saliency. Blur acts
 as a low-pass filter, so it should leave a measurable fingerprint in the
-frequency domain. The detectors operate purely on the input images — they never
+frequency domain. The detectors operate purely on the input images. They never
 query the trained model.
 
 ## Results at a glance
@@ -39,7 +38,7 @@ pixel-intensity entropy, which ignores spatial structure, did not.
 
 | File                  | Purpose |
 |-----------------------|---------|
-| `model.py`            | `LightweightCNN` — the small ~280k-parameter target CNN |
+| `model.py`            | `LightweightCNN`, the small ~280k-parameter target CNN |
 | `train.py`            | Trains a clean baseline and a backdoored model; reports attack success rate; saves training-curve and poison-example figures |
 | `detector.py`         | Runs all detection experiments (FFT, entropy, Laplacian, total variation, spectral centroid) and saves every results figure |
 | `requirements.txt`    | Python dependencies |
@@ -75,8 +74,8 @@ Key settings live at the top of `train.py` and are mirrored in `detector.py`
 (keep them in sync if you change them):
 
 - `SOURCE_CLASS = 0` (airplane), `TARGET_CLASS = 1` (automobile)
-- `BLUR_SIGMA = 2.5` — strength of the Gaussian blur trigger
-- `POISON_RATE = 0.10` — fraction of source-class images poisoned
+- `BLUR_SIGMA = 2.5`: strength of the Gaussian blur trigger
+- `POISON_RATE = 0.10`: fraction of source-class images poisoned
 
 Seeds are fixed in `train.py` for reproducible poison selection and training.
 
@@ -84,6 +83,6 @@ Seeds are fixed in `train.py` for reproducible poison selection and training.
 
 This is a small-scale proof-of-concept, not a production defense. The detectors
 are essentially blur detectors, so they would also flag naturally out-of-focus
-inputs — distinguishing a *malicious* blur trigger from *benign* image blur is
-the main open problem carried forward to the thesis. The study also uses a single
-trigger type, a static threshold, and a non-adaptive attacker.
+inputs. Distinguishing a *malicious* blur trigger from *benign* image blur is
+the main open problem, carried forward to the thesis. The study also uses a
+single trigger type, a static threshold, and a non-adaptive attacker.

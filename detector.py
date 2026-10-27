@@ -8,11 +8,11 @@ globally-applied blur trigger leaves a measurable fingerprint in the frequency
 domain / edge content of the image itself, independent of what the model does
 with it.
 
-It produces four figures used in the Deliverable 2 report:
-  - fft_spectra.png            (Experiment 3: clean vs blurred FFT spectra)
-  - metric_distributions.png   (Experiment 4: HF energy + entropy histograms)
-  - roc_curves.png             (Experiment 5: FFT / Entropy / Combined ROC)
-  - detector_comparison_roc.png(Experiment 6: all five metrics compared)
+It produces four figures:
+  - fft_spectra.png            (clean vs blurred FFT spectra)
+  - metric_distributions.png   (HF energy + entropy histograms)
+  - roc_curves.png             (FFT / Entropy / Combined ROC)
+  - detector_comparison_roc.png(all five metrics compared)
 
 Run AFTER train.py (it reuses the same CIFAR-10 download in ./data).
 Deterministic given the dataset — no randomness is used here.
@@ -169,8 +169,8 @@ blur_energy = np.array(blur["FFT High-Freq Energy"])
 clean_entropy = np.array(clean["Entropy"])
 blur_entropy = np.array(blur["Entropy"])
 
-# ─── EXPERIMENT 3: FFT statistics + spectra figure ──────────────────────────
-print("\n=== Experiment 3: Frequency-Domain (FFT) ===")
+# ─── FFT statistics + spectra figure ──────────────────────────
+print("\n=== Frequency-Domain (FFT) ===")
 print(f"Clean   high-freq energy: mean={clean_energy.mean():.4f}  std={clean_energy.std():.4f}")
 print(f"Blurred high-freq energy: mean={blur_energy.mean():.4f}  std={blur_energy.std():.4f}")
 
@@ -191,8 +191,8 @@ plt.savefig("fft_spectra.png")
 plt.close()
 print("[Plot] Saved fft_spectra.png")
 
-# ─── EXPERIMENT 4: entropy statistics + distribution figure ─────────────────
-print("\n=== Experiment 4: Entropy ===")
+# ─── Entropy statistics + distribution figure ─────────────────
+print("\n=== Entropy ===")
 print(f"Clean   entropy: mean={clean_entropy.mean():.4f}  std={clean_entropy.std():.4f}")
 print(f"Blurred entropy: mean={blur_entropy.mean():.4f}  std={blur_entropy.std():.4f}")
 
@@ -212,7 +212,7 @@ plt.savefig("metric_distributions.png")
 plt.close()
 print("[Plot] Saved metric_distributions.png")
 
-# ─── EXPERIMENT 5: FFT / Entropy / Combined detectors ───────────────────────
+# ─── FFT / Entropy / Combined detectors ───────────────────────
 fft_det = evaluate(clean_energy, blur_energy, flag_below=True)
 entropy_det = evaluate(clean_entropy, blur_entropy, flag_below=True)
 
@@ -230,7 +230,7 @@ combined_clean = (ce + cn) / 2
 combined_blur = (be + bn) / 2
 combined_det = evaluate(combined_clean, combined_blur, flag_below=True)
 
-print("\n=== Experiment 5: Detection Performance (FFT / Entropy / Combined) ===")
+print("\n=== Detection Performance (FFT / Entropy / Combined) ===")
 for name, d in [("FFT", fft_det), ("Entropy", entropy_det), ("Combined", combined_det)]:
     print(f"\n{name} detector:")
     print(f"  TPR={d['tpr']:.4f}  FPR={d['fpr']:.4f}  "
@@ -251,8 +251,8 @@ plt.savefig("roc_curves.png")
 plt.close()
 print("\n[Plot] Saved roc_curves.png")
 
-# ─── EXPERIMENT 6: five-metric comparison ───────────────────────────────────
-print("\n=== Experiment 6: Comparative Evaluation of Global Metrics ===")
+# ─── Five-metric comparison ───────────────────────────────────
+print("\n=== Comparative Evaluation of Global Metrics ===")
 print(f"\n{'Detector':<24} {'TPR':>7} {'FPR':>7} {'Prec':>7} {'F1':>7} {'AUC':>7}")
 print("-" * 64)
 results = {}
@@ -276,4 +276,3 @@ plt.tight_layout()
 plt.savefig("detector_comparison_roc.png")
 plt.close()
 print("\n[Plot] Saved detector_comparison_roc.png")
-print("\nDone. Copy the printed numbers into the Experiment 3-6 tables.")
