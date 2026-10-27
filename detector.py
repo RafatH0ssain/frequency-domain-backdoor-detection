@@ -33,14 +33,13 @@ BLUR_SIGMA       = 2.5    # Gaussian blur strength of the trigger
 N_SAMPLES        = 500    # number of clean / blurred images to analyse
 HIGH_FREQ_RADIUS = 8      # radius (px) of the central low-freq disk to exclude
 
-# ─── LOAD TEST DATA ─────────────────────────────────────────────────────────
+# ─── LOAD TEST DATA ────────────────────────────────────────────
 # Only ToTensor here (no normalization) so the frequency and entropy values
 # reflect the true image content in the [0, 1] range.
-raw_transform = transforms.Compose([transforms.ToTensor()])
-test_set = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                         download=True, transform=raw_transform)
-
-
+def load_test_set():
+    raw_transform = transforms.Compose([transforms.ToTensor()])
+    return torchvision.datasets.CIFAR10(root='./data', train=False,
+                                        download=True, transform=raw_transform)
 # ─── HELPERS ────────────────────────────────────────────────────────────────
 def to_gray(img):
     """Convert a 3xHxW tensor in [0,1] to a HxW grayscale numpy array."""
@@ -149,130 +148,138 @@ def evaluate(clean_vals, blur_vals, flag_below):
     return best
 
 
-# ─── COLLECT METRICS ON CLEAN vs BLURRED ────────────────────────────────────
-print("Collecting metrics on clean and blurred images...")
-source_indices = [i for i, (_, lbl) in enumerate(test_set)
-                  if lbl == SOURCE_CLASS][:N_SAMPLES]
 
-clean = {name: [] for name in METRICS}
-blur = {name: [] for name in METRICS}
-for idx in source_indices:
-    img, _ = test_set[idx]
-    bimg = apply_blur(img, BLUR_SIGMA)
-    for name, (fn, _) in METRICS.items():
-        clean[name].append(fn(img))
-        blur[name].append(fn(bimg))
+def main():
+    test_set = load_test_set()
 
-# Convenience handles for the two headline metrics used in Exp 3/4/5.
-clean_energy = np.array(clean["FFT High-Freq Energy"])
-blur_energy = np.array(blur["FFT High-Freq Energy"])
-clean_entropy = np.array(clean["Entropy"])
-blur_entropy = np.array(blur["Entropy"])
+    # ─── COLLECT METRICS ON CLEAN vs BLURRED ────────────────────────────────────
+    print("Collecting metrics on clean and blurred images...")
+    source_indices = [i for i, (_, lbl) in enumerate(test_set)
+                      if lbl == SOURCE_CLASS][:N_SAMPLES]
 
-# ─── FFT statistics + spectra figure ──────────────────────────
-print("\n=== Frequency-Domain (FFT) ===")
-print(f"Clean   high-freq energy: mean={clean_energy.mean():.4f}  std={clean_energy.std():.4f}")
-print(f"Blurred high-freq energy: mean={blur_energy.mean():.4f}  std={blur_energy.std():.4f}")
+    clean = {name: [] for name in METRICS}
+    blur = {name: [] for name in METRICS}
+    for idx in source_indices:
+        img, _ = test_set[idx]
+        bimg = apply_blur(img, BLUR_SIGMA)
+        for name, (fn, _) in METRICS.items():
+            clean[name].append(fn(img))
+            blur[name].append(fn(bimg))
 
-example_img, _ = test_set[source_indices[0]]
-example_blur = apply_blur(example_img, BLUR_SIGMA)
-fig, axes = plt.subplots(2, 2, figsize=(10, 9))
-for row, (im, name) in enumerate([(example_img, "Clean"), (example_blur, "Blurred")]):
-    gray = to_gray(im)
-    spectrum = np.log1p(np.abs(np.fft.fftshift(np.fft.fft2(gray))))
-    axes[row][0].imshow(im.permute(1, 2, 0).clamp(0, 1))
-    axes[row][0].set_title(f"{name} image")
-    axes[row][0].axis('off')
-    axes[row][1].imshow(spectrum, cmap='viridis')
-    axes[row][1].set_title(f"{name} FFT magnitude (log)")
-    axes[row][1].axis('off')
-plt.tight_layout()
-plt.savefig("fft_spectra.png")
-plt.close()
-print("[Plot] Saved fft_spectra.png")
+    # Convenience handles for the two headline metrics used in Exp 3/4/5.
+    clean_energy = np.array(clean["FFT High-Freq Energy"])
+    blur_energy = np.array(blur["FFT High-Freq Energy"])
+    clean_entropy = np.array(clean["Entropy"])
+    blur_entropy = np.array(blur["Entropy"])
 
-# ─── Entropy statistics + distribution figure ─────────────────
-print("\n=== Entropy ===")
-print(f"Clean   entropy: mean={clean_entropy.mean():.4f}  std={clean_entropy.std():.4f}")
-print(f"Blurred entropy: mean={blur_entropy.mean():.4f}  std={blur_entropy.std():.4f}")
+    # ─── FFT statistics + spectra figure ──────────────────────────
+    print("\n=== Frequency-Domain (FFT) ===")
+    print(f"Clean   high-freq energy: mean={clean_energy.mean():.4f}  std={clean_energy.std():.4f}")
+    print(f"Blurred high-freq energy: mean={blur_energy.mean():.4f}  std={blur_energy.std():.4f}")
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-ax1.hist(clean_energy, bins=30, alpha=0.6, label='Clean')
-ax1.hist(blur_energy, bins=30, alpha=0.6, label='Blurred')
-ax1.set_title('High-Frequency Energy Distribution')
-ax1.set_xlabel('Mean HF energy')
-ax1.legend()
-ax2.hist(clean_entropy, bins=30, alpha=0.6, label='Clean')
-ax2.hist(blur_entropy, bins=30, alpha=0.6, label='Blurred')
-ax2.set_title('Entropy Distribution')
-ax2.set_xlabel('Shannon entropy (bits)')
-ax2.legend()
-plt.tight_layout()
-plt.savefig("metric_distributions.png")
-plt.close()
-print("[Plot] Saved metric_distributions.png")
+    example_img, _ = test_set[source_indices[0]]
+    example_blur = apply_blur(example_img, BLUR_SIGMA)
+    fig, axes = plt.subplots(2, 2, figsize=(10, 9))
+    for row, (im, name) in enumerate([(example_img, "Clean"), (example_blur, "Blurred")]):
+        gray = to_gray(im)
+        spectrum = np.log1p(np.abs(np.fft.fftshift(np.fft.fft2(gray))))
+        axes[row][0].imshow(im.permute(1, 2, 0).clamp(0, 1))
+        axes[row][0].set_title(f"{name} image")
+        axes[row][0].axis('off')
+        axes[row][1].imshow(spectrum, cmap='viridis')
+        axes[row][1].set_title(f"{name} FFT magnitude (log)")
+        axes[row][1].axis('off')
+    plt.tight_layout()
+    plt.savefig("fft_spectra.png")
+    plt.close()
+    print("[Plot] Saved fft_spectra.png")
 
-# ─── FFT / Entropy / Combined detectors ───────────────────────
-fft_det = evaluate(clean_energy, blur_energy, flag_below=True)
-entropy_det = evaluate(clean_entropy, blur_entropy, flag_below=True)
+    # ─── Entropy statistics + distribution figure ─────────────────
+    print("\n=== Entropy ===")
+    print(f"Clean   entropy: mean={clean_entropy.mean():.4f}  std={clean_entropy.std():.4f}")
+    print(f"Blurred entropy: mean={blur_entropy.mean():.4f}  std={blur_entropy.std():.4f}")
 
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+    ax1.hist(clean_energy, bins=30, alpha=0.6, label='Clean')
+    ax1.hist(blur_energy, bins=30, alpha=0.6, label='Blurred')
+    ax1.set_title('High-Frequency Energy Distribution')
+    ax1.set_xlabel('Mean HF energy')
+    ax1.legend()
+    ax2.hist(clean_entropy, bins=30, alpha=0.6, label='Clean')
+    ax2.hist(blur_entropy, bins=30, alpha=0.6, label='Blurred')
+    ax2.set_title('Entropy Distribution')
+    ax2.set_xlabel('Shannon entropy (bits)')
+    ax2.legend()
+    plt.tight_layout()
+    plt.savefig("metric_distributions.png")
+    plt.close()
+    print("[Plot] Saved metric_distributions.png")
 
-def norm(a, b):
-    """Min-max normalise both arrays jointly to [0, 1]."""
-    allv = np.concatenate([a, b])
-    lo, hi = allv.min(), allv.max()
-    return (a - lo) / (hi - lo + 1e-9), (b - lo) / (hi - lo + 1e-9)
+    # ─── FFT / Entropy / Combined detectors ───────────────────────
+    fft_det = evaluate(clean_energy, blur_energy, flag_below=True)
+    entropy_det = evaluate(clean_entropy, blur_entropy, flag_below=True)
 
 
-ce, be = norm(clean_energy, blur_energy)
-cn, bn = norm(clean_entropy, blur_entropy)
-combined_clean = (ce + cn) / 2
-combined_blur = (be + bn) / 2
-combined_det = evaluate(combined_clean, combined_blur, flag_below=True)
+    def norm(a, b):
+        """Min-max normalise both arrays jointly to [0, 1]."""
+        allv = np.concatenate([a, b])
+        lo, hi = allv.min(), allv.max()
+        return (a - lo) / (hi - lo + 1e-9), (b - lo) / (hi - lo + 1e-9)
 
-print("\n=== Detection Performance (FFT / Entropy / Combined) ===")
-for name, d in [("FFT", fft_det), ("Entropy", entropy_det), ("Combined", combined_det)]:
-    print(f"\n{name} detector:")
-    print(f"  TPR={d['tpr']:.4f}  FPR={d['fpr']:.4f}  "
-          f"Precision={d['precision']:.4f}  Recall={d['recall']:.4f}  "
-          f"F1={d['f1']:.4f}  AUC={d['auc']:.4f}")
 
-plt.figure(figsize=(6, 6))
-for name, d in [("FFT", fft_det), ("Entropy", entropy_det), ("Combined", combined_det)]:
-    fpr, tpr = d['roc']
-    plt.plot(fpr, tpr, label=f"{name} (AUC={d['auc']:.3f})")
-plt.plot([0, 1], [0, 1], 'k--', alpha=0.4)
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Detector ROC Curves')
-plt.legend()
-plt.tight_layout()
-plt.savefig("roc_curves.png")
-plt.close()
-print("\n[Plot] Saved roc_curves.png")
+    ce, be = norm(clean_energy, blur_energy)
+    cn, bn = norm(clean_entropy, blur_entropy)
+    combined_clean = (ce + cn) / 2
+    combined_blur = (be + bn) / 2
+    combined_det = evaluate(combined_clean, combined_blur, flag_below=True)
 
-# ─── Five-metric comparison ───────────────────────────────────
-print("\n=== Comparative Evaluation of Global Metrics ===")
-print(f"\n{'Detector':<24} {'TPR':>7} {'FPR':>7} {'Prec':>7} {'F1':>7} {'AUC':>7}")
-print("-" * 64)
-results = {}
-for name, (fn, below) in METRICS.items():
-    r = evaluate(clean[name], blur[name], below)
-    results[name] = r
-    print(f"{name:<24} {r['tpr']:>7.3f} {r['fpr']:>7.3f} "
-          f"{r['precision']:>7.3f} {r['f1']:>7.3f} {r['auc']:>7.3f}")
-    print(f"{'  clean/blur mean:':<24} {r['clean_mean']:>7.3f} / {r['blur_mean']:.3f}")
+    print("\n=== Detection Performance (FFT / Entropy / Combined) ===")
+    for name, d in [("FFT", fft_det), ("Entropy", entropy_det), ("Combined", combined_det)]:
+        print(f"\n{name} detector:")
+        print(f"  TPR={d['tpr']:.4f}  FPR={d['fpr']:.4f}  "
+              f"Precision={d['precision']:.4f}  Recall={d['recall']:.4f}  "
+              f"F1={d['f1']:.4f}  AUC={d['auc']:.4f}")
 
-plt.figure(figsize=(7, 7))
-for name, r in results.items():
-    fpr, tpr = r['roc']
-    plt.plot(fpr, tpr, label=f"{name} (AUC={r['auc']:.3f})")
-plt.plot([0, 1], [0, 1], 'k--', alpha=0.4)
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Detector Comparison — ROC Curves')
-plt.legend(fontsize=9)
-plt.tight_layout()
-plt.savefig("detector_comparison_roc.png")
-plt.close()
-print("\n[Plot] Saved detector_comparison_roc.png")
+    plt.figure(figsize=(6, 6))
+    for name, d in [("FFT", fft_det), ("Entropy", entropy_det), ("Combined", combined_det)]:
+        fpr, tpr = d['roc']
+        plt.plot(fpr, tpr, label=f"{name} (AUC={d['auc']:.3f})")
+    plt.plot([0, 1], [0, 1], 'k--', alpha=0.4)
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Detector ROC Curves')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("roc_curves.png")
+    plt.close()
+    print("\n[Plot] Saved roc_curves.png")
+
+    # ─── Five-metric comparison ───────────────────────────────────
+    print("\n=== Comparative Evaluation of Global Metrics ===")
+    print(f"\n{'Detector':<24} {'TPR':>7} {'FPR':>7} {'Prec':>7} {'F1':>7} {'AUC':>7}")
+    print("-" * 64)
+    results = {}
+    for name, (fn, below) in METRICS.items():
+        r = evaluate(clean[name], blur[name], below)
+        results[name] = r
+        print(f"{name:<24} {r['tpr']:>7.3f} {r['fpr']:>7.3f} "
+              f"{r['precision']:>7.3f} {r['f1']:>7.3f} {r['auc']:>7.3f}")
+        print(f"{'  clean/blur mean:':<24} {r['clean_mean']:>7.3f} / {r['blur_mean']:.3f}")
+
+    plt.figure(figsize=(7, 7))
+    for name, r in results.items():
+        fpr, tpr = r['roc']
+        plt.plot(fpr, tpr, label=f"{name} (AUC={r['auc']:.3f})")
+    plt.plot([0, 1], [0, 1], 'k--', alpha=0.4)
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Detector Comparison — ROC Curves')
+    plt.legend(fontsize=9)
+    plt.tight_layout()
+    plt.savefig("detector_comparison_roc.png")
+    plt.close()
+    print("\n[Plot] Saved detector_comparison_roc.png")
+
+
+if __name__ == "__main__":
+    main()
