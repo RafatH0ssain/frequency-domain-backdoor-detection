@@ -78,11 +78,3 @@ Key settings live at the top of `train.py` and are mirrored in `detector.py`
 - `POISON_RATE = 0.10`: fraction of source-class images poisoned
 
 Seeds are fixed in `train.py` for reproducible poison selection and training.
-
-## Notes and limitations
-
-This is a small-scale proof-of-concept, not a production defense. The detectors
-are essentially blur detectors, so they would also flag naturally out-of-focus
-inputs. Distinguishing a *malicious* blur trigger from *benign* image blur is
-the main open problem, carried forward to the thesis. The study also uses a
-single trigger type, a static threshold, and a non-adaptive attacker.
