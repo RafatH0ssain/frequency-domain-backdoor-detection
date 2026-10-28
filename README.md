@@ -34,6 +34,10 @@ accuracy essentially unchanged (77.41% vs. a 77.49% clean baseline). Every metri
 sensitive to fine spatial detail separated triggered from clean images well;
 pixel-intensity entropy, which ignores spatial structure, did not.
 
+![Clean airplane images above their blurred, poisoned versions, which the backdoored model labels "automobile"](results/poison_examples.png)
+
+![ROC curves for the five detectors: Laplacian variance, spectral centroid and FFT energy sit near the top-left corner; entropy is close to the diagonal](results/detector_comparison_roc.png)
+
 ## Files
 
 | File                  | Purpose |
